@@ -1,33 +1,33 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+'use strict'
+
+import ChromaGrid from '@/components/bits/ChromaGrid'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
+  const items = [
+    {
+      image: 'https://i.pravatar.cc/300?img=1',
+      title: 'Sarah Johnson',
+      subtitle: 'Frontend Developer',
+      handle: '@sarahjohnson',
+      borderColor: '#3B82F6',
+      gradient: 'linear-gradient(145deg, #3B82F6, #000)',
+      url: 'https://github.com/sarahjohnson'
+    },
+    {
+      image: 'https://i.pravatar.cc/300?img=2',
+      title: 'Mike Chen',
+      subtitle: 'Backend Engineer',
+      handle: '@mikechen',
+      borderColor: '#10B981',
+      gradient: 'linear-gradient(180deg, #10B981, #000)',
+      url: 'https://linkedin.com/in/mikechen'
+    }
+  ]
   return (
     <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
+      <div className="w-full relative">
+        <ChromaGrid items={items} radius={300} damping={0.45} fadeOut={0.6} ease="power3.out" />
       </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
     </>
   )
 }
