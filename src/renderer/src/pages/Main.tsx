@@ -39,7 +39,7 @@ const Home = () => {
                   spotlightColor="rgba(255, 255, 255, 0.25)"
                 >
                   <ShinyText
-                    className={`text-[20px] ${isHovered[data.id] && 'text-white'}`}
+                    className={`text-[24px] ${isHovered[data.id] && 'text-white'}`}
                     text={data.title}
                     speed={2}
                     disabled={isHovered[data.id]}
