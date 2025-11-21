@@ -5,6 +5,7 @@ interface FolderProps {
   size?: number
   items?: React.ReactNode[]
   className?: string
+  maxCount?: number
 }
 
 const darkenColor = (hex: string, percent: number): string => {
@@ -29,9 +30,10 @@ const Folder: React.FC<FolderProps> = ({
   color = '#5227FF',
   size = 1,
   items = [],
-  className = ''
+  className = '',
+  maxCount = 3
 }) => {
-  const maxItems = 3
+  const maxItems = maxCount
   const papers = items.slice(0, maxItems)
   while (papers.length < maxItems) {
     papers.push(null)

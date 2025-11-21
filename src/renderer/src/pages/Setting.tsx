@@ -4,10 +4,11 @@ import Folder from '@/components/bits/Folder'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface FolderImage {
-  id: string
-  file: File
-  preview: string
-  uploadedAt: number
+  name: string
+  path: string
+  size: number
+  modifiedAt: number
+  base64?: string
 }
 
 interface FolderData {
@@ -32,6 +33,31 @@ const Setting: React.FC = () => {
       setIsLoading(true)
       const folderList = await window.api.getFolders()
       setFolders(folderList)
+
+      // Load images for each folder
+      const imagesMap: Record<string, FolderImage[]> = {}
+      for (const folder of folderList) {
+        try {
+          const imageList = await window.api.getFolderImages(folder.id)
+          // Get base64 for latest 2 images only (for performance)
+          const imagesWithBase64 = await Promise.all(
+            imageList.slice(0, 2).map(async (image) => {
+              try {
+                const { base64 } = await window.api.getImageBase64(folder.id, image.name)
+                return { ...image, base64 }
+              } catch (error) {
+                console.error(`Error loading image ${image.name}:`, error)
+                return image
+              }
+            })
+          )
+          imagesMap[folder.id] = imagesWithBase64
+        } catch (error) {
+          console.error(`Error loading images for folder ${folder.id}:`, error)
+          imagesMap[folder.id] = []
+        }
+      }
+      setFolderImages(imagesMap)
     } catch (error) {
       console.error('Error loading folders:', error)
     } finally {
@@ -84,12 +110,6 @@ const Setting: React.FC = () => {
 
     try {
       await window.api.deleteFolder(folderId)
-      // 해당 폴더의 이미지도 제거
-      setFolderImages((prev) => {
-        const updated = { ...prev }
-        delete updated[folderId]
-        return updated
-      })
       await loadFolders()
     } catch (error) {
       console.error('Error deleting folder:', error)
@@ -97,89 +117,83 @@ const Setting: React.FC = () => {
     }
   }
 
-  const handleFileUpload = (folderId: string, event: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const newImage: FolderImage = {
-          id: `${Date.now()}-${Math.random()}`,
-          file,
-          preview: reader.result as string,
-          uploadedAt: Date.now()
-        }
-        setFolderImages((prev) => ({
-          ...prev,
-          [folderId]: [...(prev[folderId] || []), newImage]
-        }))
-      }
-      reader.readAsDataURL(file)
-    }
-    // Reset input value to allow selecting the same file again
-    event.target.value = ''
-  }
-
   const getLatestImages = (folderId: string): FolderImage[] => {
     const images = folderImages[folderId] || []
-    // Sort by uploadedAt (newest first) and take latest 2
-    return [...images].sort((a, b) => b.uploadedAt - a.uploadedAt).slice(0, 2)
+    // Images are already sorted by modifiedAt (newest first) from API
+    // and limited to 2 images
+    return images
   }
 
   const renderFolderItems = (folderId: string): React.ReactNode[] => {
     const latestImages = getLatestImages(folderId)
     const items: React.ReactNode[] = []
 
-    // Add latest images (max 2)
-    latestImages.forEach((image) => {
+    // Add upload button first - navigate to upload page on click
+    items.push(
+      <div
+        key="upload-button"
+        onClick={() => navigate(`/upload/${folderId}`)}
+        className="w-full h-full rounded-lg flex items-center justify-center bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer border-2 border-dashed border-gray-400"
+      >
+        <div className="flex flex-col items-center justify-center">
+          <svg
+            className="w-8 h-8 text-gray-500 mb-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span className="text-gray-600 text-sm font-medium">업로드</span>
+        </div>
+      </div>
+    )
+
+    // Add latest images based on count
+    // 이미지 2개 이상: 업로드 + 최신 2개
+    // 이미지 1개: 업로드 + 이미지 1개
+    // 이미지 0개: 업로드만
+    if (latestImages.length >= 2) {
+      // 최신 2개만 표시
+      latestImages.slice(0, 2).forEach((image) => {
+        items.push(
+          <div
+            key={image.name}
+            className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100"
+          >
+            {image.base64 ? (
+              <img src={image.base64} alt={image.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                로딩 중...
+              </div>
+            )}
+          </div>
+        )
+      })
+    } else if (latestImages.length === 1) {
+      // 이미지 1개 표시
       items.push(
         <div
-          key={image.id}
+          key={latestImages[0].name}
           className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100"
         >
-          <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover" />
-        </div>
-      )
-    })
-
-    // Always add upload button (max 3 items total)
-    if (items.length < 3) {
-      items.push(
-        <div
-          key="upload-button"
-          className="w-full h-full rounded-lg flex items-center justify-center bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer border-2 border-dashed border-gray-400"
-        >
-          <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(folderId, e)}
-              className="hidden"
+          {latestImages[0].base64 ? (
+            <img
+              src={latestImages[0].base64}
+              alt={latestImages[0].name}
+              className="w-full h-full object-cover"
             />
-            <svg
-              className="w-12 h-12 text-gray-500 mb-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span className="text-gray-600 text-sm font-medium">업로드</span>
-          </label>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+              로딩 중...
+            </div>
+          )}
         </div>
       )
     }
-
-    // Pad with null if less than 3 items
-    while (items.length < 3) {
-      items.push(null)
-    }
-
-    return items.slice(0, 3)
+    // 이미지 0개일 경우 업로드 버튼만 반환 (아무것도 추가하지 않음)
+    return items
   }
 
   return (
@@ -222,6 +236,7 @@ const Setting: React.FC = () => {
                     color="#5227FF"
                     size={1.5}
                     className="flex-shrink-0"
+                    maxCount={renderFolderItems(data.id).length}
                   />
                   <div className="relative w-full flex items-center justify-center px-14">
                     <h2 className="text-white text-xl font-semibold text-center truncate w-full">
