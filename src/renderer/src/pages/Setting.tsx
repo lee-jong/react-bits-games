@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Folder from '@/components/bits/Folder'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import AddFolderModal from '@/components/setting/AddFolderModal'
+import FolderCard from '@/components/setting/FolderCard'
+import UploadButton from '@/components/setting/UploadButton'
 
 interface FolderImage {
   name: string
@@ -124,78 +126,6 @@ const Setting: React.FC = () => {
     return images
   }
 
-  const renderFolderItems = (folderId: string): React.ReactNode[] => {
-    const latestImages = getLatestImages(folderId)
-    const items: React.ReactNode[] = []
-
-    // Add upload button first - navigate to upload page on click
-    items.push(
-      <div
-        key="upload-button"
-        onClick={() => navigate(`/upload/${folderId}`)}
-        className="w-full h-full rounded-lg flex items-center justify-center bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer border-2 border-dashed border-gray-400"
-      >
-        <div className="flex flex-col items-center justify-center">
-          <svg
-            className="w-8 h-8 text-gray-500 mb-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="text-gray-600 text-sm font-medium">업로드</span>
-        </div>
-      </div>
-    )
-
-    // Add latest images based on count
-    // 이미지 2개 이상: 업로드 + 최신 2개
-    // 이미지 1개: 업로드 + 이미지 1개
-    // 이미지 0개: 업로드만
-    if (latestImages.length >= 2) {
-      // 최신 2개만 표시
-      latestImages.slice(0, 2).forEach((image) => {
-        items.push(
-          <div
-            key={image.name}
-            className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100"
-          >
-            {image.base64 ? (
-              <img src={image.base64} alt={image.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                로딩 중...
-              </div>
-            )}
-          </div>
-        )
-      })
-    } else if (latestImages.length === 1) {
-      // 이미지 1개 표시
-      items.push(
-        <div
-          key={latestImages[0].name}
-          className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100"
-        >
-          {latestImages[0].base64 ? (
-            <img
-              src={latestImages[0].base64}
-              alt={latestImages[0].name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-              로딩 중...
-            </div>
-          )}
-        </div>
-      )
-    }
-    // 이미지 0개일 경우 업로드 버튼만 반환 (아무것도 추가하지 않음)
-    return items
-  }
-
   return (
     <div className="relative w-full h-full">
       <ScrollArea className="w-full h-full">
@@ -229,73 +159,38 @@ const Setting: React.FC = () => {
           ) : (
             <div className="grid grid-cols-5 gap-x-8 gap-y-12">
               {/* Folder Cards */}
-              {folders.map((data) => (
-                <div key={data.id} className="flex flex-col items-center gap-8 relative group">
-                  <Folder
-                    items={renderFolderItems(data.id)}
-                    color="#5227FF"
-                    size={1.5}
-                    className="flex-shrink-0"
-                    maxCount={renderFolderItems(data.id).length}
+              {folders.map((data) => {
+                const latestImages = getLatestImages(data.id)
+                return (
+                  <FolderCard
+                    key={data.id}
+                    folderId={data.id}
+                    folderTitle={data.title}
+                    images={latestImages}
+                    uploadButton={
+                      <UploadButton
+                        key="upload-button"
+                        onClick={() => navigate(`/upload/${data.id}`)}
+                      />
+                    }
+                    onDelete={handleDeleteFolder}
                   />
-                  <div className="relative w-full flex items-center justify-center px-14">
-                    <h2 className="text-white text-xl font-semibold text-center truncate w-full">
-                      {data.title}
-                    </h2>
-                    <button
-                      onClick={() => handleDeleteFolder(data.id)}
-                      className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded flex-shrink-0"
-                      title="폴더 삭제"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
           {/* Add Folder Modal */}
-          {showAddModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700">
-                <h2 className="text-white text-xl font-bold mb-4">새 폴더 추가</h2>
-                <input
-                  type="text"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddFolder()
-                    } else if (e.key === 'Escape') {
-                      setShowAddModal(false)
-                      setNewFolderName('')
-                    }
-                  }}
-                  placeholder="폴더명을 입력하세요"
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-purple-500 mb-4"
-                  autoFocus
-                />
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => {
-                      setShowAddModal(false)
-                      setNewFolderName('')
-                    }}
-                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleAddFolder}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                  >
-                    추가
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <AddFolderModal
+            isOpen={showAddModal}
+            folderName={newFolderName}
+            onFolderNameChange={setNewFolderName}
+            onAdd={handleAddFolder}
+            onCancel={() => {
+              setShowAddModal(false)
+              setNewFolderName('')
+            }}
+          />
         </div>
       </ScrollArea>
     </div>

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import UploadHeader from '@/components/upload/UploadHeader'
+import UploadSection from '@/components/upload/UploadSection'
+import ImageItem from '@/components/upload/ImageItem'
 
 interface ImageFile {
   name: string
@@ -26,13 +29,7 @@ const Upload: React.FC = () => {
   const [newName, setNewName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    if (folderName) {
-      loadImages()
-    }
-  }, [folderName])
-
-  const loadImages = async (): Promise<void> => {
+  const loadImages = useCallback(async (): Promise<void> => {
     if (!folderName) return
 
     try {
@@ -58,7 +55,13 @@ const Upload: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [folderName])
+
+  useEffect(() => {
+    if (folderName) {
+      loadImages()
+    }
+  }, [folderName, loadImages])
 
   const handleBack = (): void => {
     navigate('/setting')
@@ -168,70 +171,14 @@ const Upload: React.FC = () => {
     <div className="relative w-full h-full">
       <ScrollArea className="w-full h-full">
         <div className="p-20">
-          <div className="mb-8">
-            <button
-              onClick={handleBack}
-              className="text-white hover:text-gray-300 transition-colors mb-4"
-            >
-              ← 뒤로가기
-            </button>
-            <h1 className="text-4xl font-bold text-white mb-2">이미지 업로드</h1>
-            <p className="text-gray-400">폴더: {folderName}</p>
-          </div>
+          <UploadHeader folderName={folderName} onBack={handleBack} />
 
-          {/* Upload Section */}
-          <div className="mb-8 bg-gray-800/50 rounded-lg border border-gray-700 p-6">
-            <h2 className="text-white text-xl font-semibold mb-4">새 이미지 추가</h2>
-            <div className="flex gap-4 items-center">
-              <label className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors cursor-pointer font-medium">
-                파일 선택 (멀티 선택 가능)
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
-              {uploadingImages.length > 0 && (
-                <>
-                  <span className="text-gray-400">선택된 파일: {uploadingImages.length}개</span>
-                  <button
-                    onClick={handleUpload}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
-                  >
-                    업로드
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Uploading Images Preview */}
-            {uploadingImages.length > 0 && (
-              <div className="mt-6 grid grid-cols-5 gap-4">
-                {uploadingImages.map((img) => (
-                  <div key={img.id} className="relative group">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-700">
-                      <img
-                        src={img.preview}
-                        alt={img.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-white text-sm truncate">{img.name}</p>
-                      <button
-                        onClick={() => removeUploadingImage(img.id)}
-                        className="text-red-400 hover:text-red-300 text-xs mt-1"
-                      >
-                        제거
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <UploadSection
+            uploadingImages={uploadingImages}
+            onFileSelect={handleFileSelect}
+            onUpload={handleUpload}
+            onRemoveUploadingImage={removeUploadingImage}
+          />
 
           {/* Existing Images Section */}
           <div>
@@ -245,74 +192,18 @@ const Upload: React.FC = () => {
             ) : (
               <div className="grid grid-cols-5 gap-4">
                 {images.map((image) => (
-                  <div key={image.name} className="relative group">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-700">
-                      {image.base64 ? (
-                        <img
-                          src={image.base64}
-                          alt={image.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          로딩 중...
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      {editingName === image.name ? (
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="text"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleRename(image.name)
-                              } else if (e.key === 'Escape') {
-                                cancelRename()
-                              }
-                            }}
-                            className="flex-1 px-2 py-1 bg-gray-700 text-white text-sm rounded border border-gray-600 focus:outline-none focus:border-purple-500"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handleRename(image.name)}
-                            className="text-green-400 hover:text-green-300 text-xs"
-                          >
-                            확인
-                          </button>
-                          <button
-                            onClick={cancelRename}
-                            className="text-gray-400 hover:text-gray-300 text-xs"
-                          >
-                            취소
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-white text-sm truncate" title={image.name}>
-                            {image.name}
-                          </p>
-                          <p className="text-gray-400 text-xs">{formatFileSize(image.size)}</p>
-                          <div className="flex gap-2 mt-1">
-                            <button
-                              onClick={() => startRename(image.name)}
-                              className="text-blue-400 hover:text-blue-300 text-xs"
-                            >
-                              이름 변경
-                            </button>
-                            <button
-                              onClick={() => handleDelete(image.name)}
-                              className="text-red-400 hover:text-red-300 text-xs"
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <ImageItem
+                    key={image.name}
+                    image={image}
+                    editingName={editingName}
+                    newName={newName}
+                    onStartRename={startRename}
+                    onRename={handleRename}
+                    onCancelRename={cancelRename}
+                    onNewNameChange={setNewName}
+                    onDelete={handleDelete}
+                    formatFileSize={formatFileSize}
+                  />
                 ))}
               </div>
             )}
