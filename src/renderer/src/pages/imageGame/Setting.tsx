@@ -68,7 +68,7 @@ const Setting: React.FC = () => {
   }
 
   const handleBack = (): void => {
-    navigate('/')
+    navigate('/image-game')
   }
 
   const handleAddFolder = async (): Promise<void> => {
@@ -170,7 +170,7 @@ const Setting: React.FC = () => {
                     uploadButton={
                       <UploadButton
                         key="upload-button"
-                        onClick={() => navigate(`/upload/${data.id}`)}
+                        onClick={() => navigate(`/image-game/upload/${data.id}`)}
                       />
                     }
                     onDelete={handleDeleteFolder}

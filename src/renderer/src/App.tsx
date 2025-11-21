@@ -1,17 +1,21 @@
+import React from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
-import Main from '@/pages/Main'
-import Setting from '@/pages/Setting'
-import Upload from '@/pages/Upload'
 import Layout from '@/components/layout/Layout'
+import Main from '@/pages/Main'
+import ImageMain from '@/pages/imageGame/List'
+import ImageSetting from '@/pages/imageGame/Setting'
+import ImageUpload from '@/pages/imageGame/Upload'
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <HashRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Main />} />
-          <Route path="setting" element={<Setting />} />
-          <Route path="upload/:folderName" element={<Upload />} />
+          {/* Image Routes */}
+          <Route path="image-game" element={<ImageMain />} />
+          <Route path="image-game/setting" element={<ImageSetting />} />
+          <Route path="image-game/upload/:folderName" element={<ImageUpload />} />
           <Route path="*" element={<div>404 Not Found</div>} />
         </Route>
       </Routes>

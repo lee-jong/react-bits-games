@@ -64,7 +64,7 @@ const Upload: React.FC = () => {
   }, [folderName, loadImages])
 
   const handleBack = (): void => {
-    navigate('/setting')
+    navigate('/image-game/setting')
   }
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>): void => {
