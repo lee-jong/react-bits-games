@@ -1,7 +1,15 @@
 import { ipcMain } from 'electron'
 import { join, normalize, resolve, extname } from 'path'
-import { readdirSync, statSync, writeFileSync, unlinkSync, renameSync, readFileSync, existsSync } from 'fs'
-import { getFolderPath } from './utils'
+import {
+  readdirSync,
+  statSync,
+  writeFileSync,
+  unlinkSync,
+  renameSync,
+  readFileSync,
+  existsSync
+} from 'fs'
+import { getImageFolderPath } from './utils'
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
 const MIME_TYPES: Record<string, string> = {
@@ -20,7 +28,7 @@ export function registerImageHandlers(): void {
   // Get list of images in folder
   ipcMain.handle('get-folder-images', async (_, folderName: string) => {
     try {
-      const folderPath = getFolderPath(folderName)
+      const folderPath = getImageFolderPath(folderName)
       const files = readdirSync(folderPath, { withFileTypes: true })
         .filter((dirent) => dirent.isFile())
         .filter((dirent) => {
@@ -51,7 +59,7 @@ export function registerImageHandlers(): void {
     'save-image',
     async (_, folderName: string, fileName: string, base64Data: string) => {
       try {
-        const folderPath = getFolderPath(folderName)
+        const folderPath = getImageFolderPath(folderName)
 
         // Sanitize file name
         const sanitizedFileName = fileName.replace(/[<>:"/\\|?*]/g, '')
@@ -83,7 +91,7 @@ export function registerImageHandlers(): void {
   // Delete image file
   ipcMain.handle('delete-image', async (_, folderName: string, fileName: string) => {
     try {
-      const folderPath = getFolderPath(folderName)
+      const folderPath = getImageFolderPath(folderName)
       const filePath = normalize(resolve(join(folderPath, fileName)))
 
       // Security check
@@ -108,7 +116,7 @@ export function registerImageHandlers(): void {
     'rename-image',
     async (_, folderName: string, oldFileName: string, newFileName: string) => {
       try {
-        const folderPath = getFolderPath(folderName)
+        const folderPath = getImageFolderPath(folderName)
 
         // Sanitize new file name
         const sanitizedNewFileName = newFileName.replace(/[<>:"/\\|?*]/g, '')
@@ -137,7 +145,7 @@ export function registerImageHandlers(): void {
   // Get image as base64
   ipcMain.handle('get-image-base64', async (_, folderName: string, fileName: string) => {
     try {
-      const folderPath = getFolderPath(folderName)
+      const folderPath = getImageFolderPath(folderName)
       const filePath = normalize(resolve(join(folderPath, fileName)))
 
       // Security check
@@ -164,4 +172,3 @@ export function registerImageHandlers(): void {
     }
   })
 }
-

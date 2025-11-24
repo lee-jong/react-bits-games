@@ -1,11 +1,34 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
+interface QuizItem {
+  title: string
+  quiz: string
+  answer: string
+}
+
 // Custom APIs for renderer
 const api = {
   getFolders: () => ipcRenderer.invoke('get-folders'),
   createFolder: (folderName: string) => ipcRenderer.invoke('create-folder', folderName),
   deleteFolder: (folderName: string) => ipcRenderer.invoke('delete-folder', folderName),
+  getQuizFolders: () => ipcRenderer.invoke('get-quiz-folders'),
+  createQuizFolder: (folderName: string) => ipcRenderer.invoke('create-quiz-folder', folderName),
+  deleteQuizFolder: (folderName: string) => ipcRenderer.invoke('delete-quiz-folder', folderName),
+  getQuizFile: (folderName: string) => ipcRenderer.invoke('get-quiz-file', folderName),
+  saveQuizFile: (folderName: string, category: string, quizzes: QuizItem[]) =>
+    ipcRenderer.invoke('save-quiz-file', folderName, category, quizzes),
+  getQuizFileInfo: (folderName: string) => ipcRenderer.invoke('get-quiz-file-info', folderName),
+  saveQuizImage: (
+    folderName: string,
+    title: string,
+    base64Data: string,
+    originalFileName: string
+  ) => ipcRenderer.invoke('save-quiz-image', folderName, title, base64Data, originalFileName),
+  deleteQuizImage: (folderName: string, title: string) =>
+    ipcRenderer.invoke('delete-quiz-image', folderName, title),
+  getQuizImageBase64: (folderName: string, title: string) =>
+    ipcRenderer.invoke('get-quiz-image-base64', folderName, title),
   getFolderImages: (folderName: string) => ipcRenderer.invoke('get-folder-images', folderName),
   saveImage: (folderName: string, fileName: string, base64Data: string) =>
     ipcRenderer.invoke('save-image', folderName, fileName, base64Data),

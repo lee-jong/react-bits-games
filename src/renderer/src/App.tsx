@@ -7,6 +7,9 @@ import ImageGame from '@/pages/imageGame/Game'
 import ImageAdmin from '@/pages/imageGame/Admin'
 import ImageSetting from '@/pages/imageGame/Setting'
 import ImageUpload from '@/pages/imageGame/Upload'
+import QuizList from '@/pages/quizGame/List'
+import QuizSetting from '@/pages/quizGame/Setting'
+import QuizRegister from '@/pages/quizGame/Register'
 
 // Component to handle route changes and create admin window
 const RouteHandler: React.FC = () => {
@@ -61,6 +64,9 @@ const App: React.FC = () => {
           <Route path="image-game/admin" element={<ImageAdmin />} />
           <Route path="image-game/setting" element={<ImageSetting />} />
           <Route path="image-game/upload/:folderName" element={<ImageUpload />} />
+          <Route path="quiz-game/list" element={<QuizList />} />
+          <Route path="quiz-game/setting" element={<QuizSetting />} />
+          <Route path="quiz-game/register/:folderName" element={<QuizRegister />} />
           <Route path="*" element={<div>404 Not Found</div>} />
         </Route>
       </Routes>

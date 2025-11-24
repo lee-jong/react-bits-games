@@ -18,10 +18,42 @@ interface ImageFile {
   modifiedAt: number
 }
 
+interface QuizItem {
+  title: string
+  quiz: string
+  answer: string
+}
+
 interface FolderAPI {
   getFolders: () => Promise<Folder[]>
   createFolder: (folderName: string) => Promise<CreateFolderResult>
   deleteFolder: (folderName: string) => Promise<{ success: boolean }>
+  getQuizFolders: () => Promise<Folder[]>
+  createQuizFolder: (folderName: string) => Promise<CreateFolderResult>
+  deleteQuizFolder: (folderName: string) => Promise<{ success: boolean }>
+  getQuizFile: (folderName: string) => Promise<{ category: string; quizzes: QuizItem[] }>
+  saveQuizFile: (
+    folderName: string,
+    category: string,
+    quizzes: QuizItem[]
+  ) => Promise<{ success: boolean }>
+  saveQuizImage: (
+    folderName: string,
+    title: string,
+    base64Data: string,
+    originalFileName: string
+  ) => Promise<{ success: boolean; fileName: string }>
+  deleteQuizImage: (folderName: string, title: string) => Promise<{ success: boolean }>
+  getQuizImageBase64: (
+    folderName: string,
+    title: string
+  ) => Promise<{ base64?: string; exists: boolean; fileName?: string }>
+  getQuizFileInfo: (folderName: string) => Promise<{
+    exists: boolean
+    count: number
+    modifiedAt?: number
+    quizzes?: QuizItem[]
+  }>
   getFolderImages: (folderName: string) => Promise<ImageFile[]>
   saveImage: (
     folderName: string,

@@ -2,9 +2,10 @@ import React from 'react'
 
 interface UploadButtonProps {
   onClick: () => void
+  text?: string
 }
 
-const UploadButton: React.FC<UploadButtonProps> = ({ onClick }) => {
+const UploadButton: React.FC<UploadButtonProps> = ({ onClick, text = '업로드' }) => {
   return (
     <div
       onClick={onClick}
@@ -19,7 +20,7 @@ const UploadButton: React.FC<UploadButtonProps> = ({ onClick }) => {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-        <span className="text-gray-600 text-sm font-medium">업로드</span>
+        <span className="text-gray-600 text-sm font-medium">{text}</span>
       </div>
     </div>
   )

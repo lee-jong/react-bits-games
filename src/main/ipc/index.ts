@@ -3,6 +3,8 @@ import { registerFolderHandlers } from './folders'
 import { registerImageHandlers } from './images'
 import { registerGameHandlers } from './game'
 import { registerAdminWindowHandlers } from './adminWindow'
+import { registerQuizHandlers } from './quiz'
+import { registerQuizImageHandlers } from './quizImages'
 import { getAdminWindow } from '../windows/adminWindow'
 
 /**
@@ -21,5 +23,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow | null): void {
 
   // Admin window handlers
   registerAdminWindowHandlers(mainWindow)
-}
 
+  // Quiz management handlers
+  registerQuizHandlers()
+
+  // Quiz image management handlers
+  registerQuizImageHandlers()
+}
