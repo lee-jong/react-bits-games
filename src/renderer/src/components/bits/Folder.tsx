@@ -71,7 +71,7 @@ const Folder: React.FC<FolderProps> = ({
   }
 
   const handlePaperMouseLeave = (
-    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    _e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     index: number
   ) => {
     setPaperOffsets((prev) => {
