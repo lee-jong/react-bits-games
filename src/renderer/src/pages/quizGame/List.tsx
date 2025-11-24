@@ -71,6 +71,7 @@ const QuizList: React.FC = () => {
                   <div
                     onMouseEnter={() => handleMouseEnter(data.id)}
                     onMouseLeave={() => handleMouseLeave(data.id)}
+                    onClick={() => navigate(`/quiz-game/game/${data.id}`)}
                     className="cursor-pointer"
                   >
                     <SpotlightCard

@@ -4,7 +4,11 @@ import { is } from '@electron-toolkit/utils'
 
 let adminWindow: BrowserWindow | null = null
 
-export function createAdminWindow(mainWindow: BrowserWindow | null, folderName: string): void {
+export function createAdminWindow(
+  mainWindow: BrowserWindow | null,
+  folderName: string,
+  gameType: 'image' | 'quiz' = 'image'
+): void {
   // Close existing admin window if exists
   if (adminWindow) {
     adminWindow.close()
@@ -35,13 +39,14 @@ export function createAdminWindow(mainWindow: BrowserWindow | null, folderName: 
   })
 
   // Load admin page with folderName as query parameter
+  const adminPath = gameType === 'quiz' ? 'quiz-game/admin' : 'image-game/admin'
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     adminWindow.loadURL(
-      `${process.env['ELECTRON_RENDERER_URL']}#/image-game/admin?folder=${folderName}`
+      `${process.env['ELECTRON_RENDERER_URL']}#/${adminPath}?folder=${folderName}`
     )
   } else {
     adminWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      hash: `#/image-game/admin?folder=${folderName}`
+      hash: `#/${adminPath}?folder=${folderName}`
     })
   }
 }

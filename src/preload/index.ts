@@ -35,7 +35,8 @@ const api = {
     ipcRenderer.invoke('rename-image', folderName, oldFileName, newFileName),
   getImageBase64: (folderName: string, fileName: string) =>
     ipcRenderer.invoke('get-image-base64', folderName, fileName),
-  createAdminWindow: (folderName: string) => ipcRenderer.invoke('create-admin-window', folderName),
+  createAdminWindow: (folderName: string, gameType?: 'image' | 'quiz') =>
+    ipcRenderer.invoke('create-admin-window', folderName, gameType),
   closeAdminWindow: () => ipcRenderer.invoke('close-admin-window'),
   gameStart: (folderName: string) => ipcRenderer.send('game-start', folderName),
   gameNextImage: () => ipcRenderer.send('game-next-image'),
@@ -45,6 +46,13 @@ const api = {
     ipcRenderer.on('game-image-changed', (_, imageName: string) => callback(imageName))
     return () => {
       ipcRenderer.removeAllListeners('game-image-changed')
+    }
+  },
+  gameQuizChanged: (quiz: QuizItem) => ipcRenderer.send('game-quiz-changed', quiz),
+  onGameQuizChanged: (callback: (quiz: QuizItem) => void) => {
+    ipcRenderer.on('game-quiz-changed', (_, quiz: QuizItem) => callback(quiz))
+    return () => {
+      ipcRenderer.removeAllListeners('game-quiz-changed')
     }
   },
   onGameStart: (callback: (folderName: string) => void) => {

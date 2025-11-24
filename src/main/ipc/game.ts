@@ -39,4 +39,15 @@ export function registerGameHandlers(
       adminWindow.webContents.send('game-image-changed', imageName)
     }
   })
+
+  ipcMain.on(
+    'game-quiz-changed',
+    (_, quiz: { id: string; index: number; quiz: string; answer: string }) => {
+      // Send to admin window
+      const adminWindow = getAdminWindow()
+      if (adminWindow) {
+        adminWindow.webContents.send('game-quiz-changed', quiz)
+      }
+    }
+  )
 }

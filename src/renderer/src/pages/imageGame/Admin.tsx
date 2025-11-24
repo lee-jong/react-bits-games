@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 const Admin: React.FC = () => {
@@ -10,7 +10,7 @@ const Admin: React.FC = () => {
   const [totalImages, setTotalImages] = useState(0)
   const [allImages, setAllImages] = useState<string[]>([])
 
-  const loadImages = async (): Promise<void> => {
+  const loadImages = useCallback(async (): Promise<void> => {
     if (!folderName) return
 
     try {
@@ -21,13 +21,13 @@ const Admin: React.FC = () => {
     } catch (error) {
       console.error('Error loading images:', error)
     }
-  }
+  }, [folderName])
 
   useEffect(() => {
     if (folderName) {
       loadImages()
     }
-  }, [folderName])
+  }, [folderName, loadImages])
 
   useEffect(() => {
     // Listen for image changes from Game page
@@ -69,6 +69,12 @@ const Admin: React.FC = () => {
 
   const isAllImagesShown = isGameStarted && totalImages > 0 && currentIndex >= totalImages - 1
 
+  // Remove file extension from image name
+  const getImageNameWithoutExtension = (fileName: string): string => {
+    const lastDotIndex = fileName.lastIndexOf('.')
+    return lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName
+  }
+
   return (
     <div className="w-full h-full bg-gray-900 text-white p-6 flex flex-col">
       <h1 className="text-2xl font-bold mb-4">게임 관리</h1>
@@ -84,10 +90,10 @@ const Admin: React.FC = () => {
       ) : (
         <>
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">현재 이미지</h2>
+            <h2 className="text-lg font-semibold mb-2">정답</h2>
             {currentImageName ? (
               <p className="text-white text-sm bg-gray-800 p-3 rounded-lg break-all">
-                {currentImageName}
+                {getImageNameWithoutExtension(currentImageName)}
               </p>
             ) : (
               <p className="text-gray-400 text-sm">이미지 정보 없음</p>
