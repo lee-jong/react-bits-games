@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { v4 as uuidv4 } from 'uuid'
 
 interface QuizItem {
-  title: string
+  id: string
+  index: number
   quiz: string
   answer: string
 }
@@ -14,10 +16,20 @@ const Register: React.FC = () => {
   const [quizzes, setQuizzes] = useState<QuizItem[]>([])
   const [category, setCategory] = useState<string>('')
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [editingQuiz, setEditingQuiz] = useState<QuizItem>({ title: '', quiz: '', answer: '' })
-  const [newQuiz, setNewQuiz] = useState<QuizItem>({ title: '', quiz: '', answer: '' })
-  const [quizImages, setQuizImages] = useState<Record<string, string>>({}) // title -> base64
-  const [quizImageFileNames, setQuizImageFileNames] = useState<Record<string, string>>({}) // title -> fileName
+  const [editingQuiz, setEditingQuiz] = useState<QuizItem>({
+    id: '',
+    index: 0,
+    quiz: '',
+    answer: ''
+  })
+  const [newQuiz, setNewQuiz] = useState<QuizItem>({ id: '', index: 0, quiz: '', answer: '' })
+  const [quizImages, setQuizImages] = useState<Record<string, string>>({}) // id -> base64
+  const [quizImageFileNames, setQuizImageFileNames] = useState<Record<string, string>>({}) // id -> fileName
+  const [pendingImage, setPendingImage] = useState<{
+    base64: string
+    fileName: string
+    tempId: string
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false) // Used for internal state management during saves
@@ -39,16 +51,16 @@ const Register: React.FC = () => {
         try {
           const { base64, exists, fileName } = await window.api.getQuizImageBase64(
             folderName,
-            quiz.title
+            quiz.id
           )
           if (exists && base64) {
-            imagesMap[quiz.title] = base64
+            imagesMap[quiz.id] = base64
             if (fileName) {
-              fileNamesMap[quiz.title] = fileName
+              fileNamesMap[quiz.id] = fileName
             }
           }
         } catch (error) {
-          console.error(`Error loading image for quiz ${quiz.title}:`, error)
+          console.error(`Error loading image for quiz ${quiz.id}:`, error)
         }
       }
       setQuizImages(imagesMap)
@@ -75,7 +87,7 @@ const Register: React.FC = () => {
 
     // Validate all quizzes
     for (const quiz of quizzesToSave) {
-      if (!quiz.title.trim() || !quiz.quiz.trim() || !quiz.answer.trim()) {
+      if (!quiz.id || !quiz.quiz.trim() || !quiz.answer.trim()) {
         alert('모든 필드는 필수입니다. 빈 필드가 있는지 확인해주세요.')
         return
       }
@@ -93,17 +105,53 @@ const Register: React.FC = () => {
   }
 
   const handleAddQuiz = async (): Promise<void> => {
-    if (!newQuiz.title.trim() || !newQuiz.quiz.trim() || !newQuiz.answer.trim()) {
+    if (!newQuiz.quiz.trim() || !newQuiz.answer.trim()) {
       alert('모든 필드를 입력해주세요.')
       return
     }
 
+    // Get the last quiz's index or start from 0
+    const lastIndex = quizzes.length > 0 ? Math.max(...quizzes.map((q) => q.index)) : -1
+    const newIndex = lastIndex + 1
+
+    // Generate UUID for new quiz (use pending image's tempId if exists)
+    const newId = pendingImage?.tempId || uuidv4()
+
+    // If there's a pending image, save it first
+    if (pendingImage && folderName) {
+      try {
+        await window.api.saveQuizImage(
+          folderName,
+          newId,
+          pendingImage.base64,
+          pendingImage.fileName
+        )
+      } catch (error) {
+        console.error('Error saving image:', error)
+        alert('이미지 저장에 실패했습니다.')
+        return
+      }
+    }
+
     // Add quiz to list
-    const updatedQuizzes = [...quizzes, { ...newQuiz }]
+    const quizToAdd: QuizItem = {
+      id: newId,
+      index: newIndex,
+      quiz: newQuiz.quiz,
+      answer: newQuiz.answer
+    }
+    const updatedQuizzes = [...quizzes, quizToAdd]
     setQuizzes(updatedQuizzes)
 
-    // Clear new quiz input
-    setNewQuiz({ title: '', quiz: '', answer: '' })
+    // Update state with the saved image if exists
+    if (pendingImage) {
+      setQuizImages((prev) => ({ ...prev, [newId]: pendingImage.base64 }))
+      setQuizImageFileNames((prev) => ({ ...prev, [newId]: pendingImage.fileName }))
+    }
+
+    // Clear new quiz input and pending image
+    setNewQuiz({ id: '', index: 0, quiz: '', answer: '' })
+    setPendingImage(null)
 
     // Auto-save after adding
     await saveQuizzes(updatedQuizzes)
@@ -113,14 +161,14 @@ const Register: React.FC = () => {
     if (!folderName) return
 
     const quiz = quizzes[index]
-    if (!confirm(`"${quiz.title}" 퀴즈를 삭제하시겠습니까?`)) {
+    if (!confirm(`"${index + 1}"번 퀴즈를 삭제하시겠습니까?`)) {
       return
     }
 
     // Delete image if exists
-    if (quizImages[quiz.title]) {
+    if (quizImages[quiz.id]) {
       try {
-        await window.api.deleteQuizImage(folderName, quiz.title)
+        await window.api.deleteQuizImage(folderName, quiz.id)
       } catch (error) {
         console.error('Error deleting quiz image:', error)
       }
@@ -130,10 +178,10 @@ const Register: React.FC = () => {
     const updatedQuizzes = quizzes.filter((_, i) => i !== index)
     setQuizzes(updatedQuizzes)
     const updatedImages = { ...quizImages }
-    delete updatedImages[quiz.title]
+    delete updatedImages[quiz.id]
     setQuizImages(updatedImages)
     const updatedFileNames = { ...quizImageFileNames }
-    delete updatedFileNames[quiz.title]
+    delete updatedFileNames[quiz.id]
     setQuizImageFileNames(updatedFileNames)
 
     // Auto-save after deleting
@@ -147,43 +195,18 @@ const Register: React.FC = () => {
 
   const cancelEdit = (): void => {
     setEditingIndex(null)
-    setEditingQuiz({ title: '', quiz: '', answer: '' })
+    setEditingQuiz({ id: '', index: 0, quiz: '', answer: '' })
   }
 
   const saveEdit = async (index: number): Promise<void> => {
-    if (
-      !folderName ||
-      !editingQuiz.title.trim() ||
-      !editingQuiz.quiz.trim() ||
-      !editingQuiz.answer.trim()
-    ) {
+    if (!folderName || !editingQuiz.id || !editingQuiz.quiz.trim() || !editingQuiz.answer.trim()) {
       alert('모든 필드는 필수입니다.')
       return
     }
 
-    const oldQuiz = quizzes[index]
     const updatedQuizzes = [...quizzes]
     updatedQuizzes[index] = { ...editingQuiz }
     setQuizzes(updatedQuizzes)
-
-    // If title changed, handle image rename
-    if (oldQuiz.title !== editingQuiz.title) {
-      // If image exists, need to handle rename
-      if (quizImages[oldQuiz.title]) {
-        const oldImage = quizImages[oldQuiz.title]
-        const oldFileName = quizImageFileNames[oldQuiz.title]
-        const updatedImages = { ...quizImages }
-        const updatedFileNames = { ...quizImageFileNames }
-        delete updatedImages[oldQuiz.title]
-        delete updatedFileNames[oldQuiz.title]
-        updatedImages[editingQuiz.title] = oldImage
-        if (oldFileName) {
-          updatedFileNames[editingQuiz.title] = oldFileName
-        }
-        setQuizImages(updatedImages)
-        setQuizImageFileNames(updatedFileNames)
-      }
-    }
 
     cancelEdit()
 
@@ -192,10 +215,10 @@ const Register: React.FC = () => {
   }
 
   const handleImageUpload = async (
-    title: string,
+    quizId: string,
     event: React.ChangeEvent<HTMLInputElement>
   ): Promise<void> => {
-    if (!folderName || !event.target.files || event.target.files.length === 0) return
+    if (!folderName || !event.target.files || event.target.files.length === 0 || !quizId) return
 
     const file = event.target.files[0]
     if (!file.type.startsWith('image/')) {
@@ -208,9 +231,9 @@ const Register: React.FC = () => {
       reader.onloadend = async () => {
         const base64Data = reader.result as string
         try {
-          await window.api.saveQuizImage(folderName, title, base64Data, file.name)
-          setQuizImages((prev) => ({ ...prev, [title]: base64Data }))
-          setQuizImageFileNames((prev) => ({ ...prev, [title]: file.name }))
+          await window.api.saveQuizImage(folderName, quizId, base64Data, file.name)
+          setQuizImages((prev) => ({ ...prev, [quizId]: base64Data }))
+          setQuizImageFileNames((prev) => ({ ...prev, [quizId]: file.name }))
         } catch (error) {
           console.error('Error uploading image:', error)
           alert('이미지 업로드에 실패했습니다.')
@@ -226,20 +249,20 @@ const Register: React.FC = () => {
     event.target.value = ''
   }
 
-  const handleImageDelete = async (title: string): Promise<void> => {
+  const handleImageDelete = async (quizId: string, index: number): Promise<void> => {
     if (!folderName) return
 
-    if (!confirm(`"${title}"의 이미지를 삭제하시겠습니까?`)) {
+    if (!confirm(`"${index + 1}"번 퀴즈의 이미지를 삭제하시겠습니까?`)) {
       return
     }
 
     try {
-      await window.api.deleteQuizImage(folderName, title)
+      await window.api.deleteQuizImage(folderName, quizId)
       const updatedImages = { ...quizImages }
-      delete updatedImages[title]
+      delete updatedImages[quizId]
       setQuizImages(updatedImages)
       const updatedFileNames = { ...quizImageFileNames }
-      delete updatedFileNames[title]
+      delete updatedFileNames[quizId]
       setQuizImageFileNames(updatedFileNames)
     } catch (error) {
       console.error('Error deleting image:', error)
@@ -270,7 +293,7 @@ const Register: React.FC = () => {
                 <thead>
                   <tr className="bg-gray-700">
                     <th className="px-4 py-3 text-left text-white font-semibold border-b border-gray-600">
-                      제목 *
+                      번호
                     </th>
                     <th className="px-4 py-3 text-left text-white font-semibold border-b border-gray-600">
                       퀴즈 *
@@ -289,15 +312,7 @@ const Register: React.FC = () => {
                 <tbody>
                   {/* Add new quiz row */}
                   <tr className="border-b border-gray-700 hover:bg-gray-750">
-                    <td className="px-4 py-3">
-                      <input
-                        type="text"
-                        value={newQuiz.title}
-                        onChange={(e) => setNewQuiz({ ...newQuiz, title: e.target.value })}
-                        placeholder="제목을 입력하세요"
-                        className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:border-purple-500"
-                      />
-                    </td>
+                    <td className="px-4 py-3 text-white">{quizzes.length + 1}</td>
                     <td className="px-4 py-3">
                       <textarea
                         value={newQuiz.quiz}
@@ -318,30 +333,66 @@ const Register: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col items-start gap-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (newQuiz.title.trim()) {
-                              handleImageUpload(newQuiz.title, e)
-                            } else {
-                              alert('먼저 제목을 입력해주세요.')
-                              e.target.value = ''
-                            }
-                          }}
-                          className="hidden"
-                          id="new-quiz-image"
-                        />
-                        <label
-                          htmlFor="new-quiz-image"
-                          className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded cursor-pointer"
-                        >
-                          업로드
-                        </label>
-                        {quizImageFileNames[newQuiz.title] && (
-                          <span className="text-gray-400 text-xs truncate max-w-[150px]">
-                            {quizImageFileNames[newQuiz.title]}
-                          </span>
+                        {pendingImage ? (
+                          <div className="flex flex-col gap-2">
+                            <div className="relative">
+                              <img
+                                src={pendingImage.base64}
+                                alt="미리보기"
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                              <button
+                                onClick={() => setPendingImage(null)}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <span className="text-gray-400 text-xs truncate max-w-[150px]">
+                              {pendingImage.fileName}
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (!e.target.files || e.target.files.length === 0) return
+
+                                const file = e.target.files[0]
+                                if (!file.type.startsWith('image/')) {
+                                  alert('이미지 파일만 업로드할 수 있습니다.')
+                                  return
+                                }
+
+                                // Generate temporary UUID for pending image
+                                const tempId = uuidv4()
+
+                                const reader = new FileReader()
+                                reader.onloadend = () => {
+                                  const base64Data = reader.result as string
+                                  setPendingImage({
+                                    base64: base64Data,
+                                    fileName: file.name,
+                                    tempId: tempId
+                                  })
+                                }
+                                reader.readAsDataURL(file)
+
+                                // Reset input
+                                e.target.value = ''
+                              }}
+                              className="hidden"
+                              id="new-quiz-image"
+                            />
+                            <label
+                              htmlFor="new-quiz-image"
+                              className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded cursor-pointer"
+                            >
+                              업로드
+                            </label>
+                          </>
                         )}
                       </div>
                     </td>
@@ -360,16 +411,7 @@ const Register: React.FC = () => {
                     <tr key={index} className="border-b border-gray-700 hover:bg-gray-750">
                       {editingIndex === index ? (
                         <>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={editingQuiz.title}
-                              onChange={(e) =>
-                                setEditingQuiz({ ...editingQuiz, title: e.target.value })
-                              }
-                              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-purple-500 focus:outline-none"
-                            />
-                          </td>
+                          <td className="px-4 py-3 text-white">{index + 1}</td>
                           <td className="px-4 py-3">
                             <textarea
                               value={editingQuiz.quiz}
@@ -392,24 +434,24 @@ const Register: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col items-start gap-2">
-                              {quizImages[editingQuiz.title] ? (
+                              {quizImages[editingQuiz.id] ? (
                                 <div className="flex flex-col gap-2">
                                   <div className="relative">
                                     <img
-                                      src={quizImages[editingQuiz.title]}
-                                      alt={editingQuiz.title}
+                                      src={quizImages[editingQuiz.id]}
+                                      alt={`퀴즈 ${index + 1}`}
                                       className="w-16 h-16 object-cover rounded"
                                     />
                                     <button
-                                      onClick={() => handleImageDelete(editingQuiz.title)}
+                                      onClick={() => handleImageDelete(editingQuiz.id, index)}
                                       className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                                     >
                                       ×
                                     </button>
                                   </div>
-                                  {quizImageFileNames[editingQuiz.title] && (
+                                  {quizImageFileNames[editingQuiz.id] && (
                                     <span className="text-gray-400 text-xs truncate max-w-[150px]">
-                                      {quizImageFileNames[editingQuiz.title]}
+                                      {quizImageFileNames[editingQuiz.id]}
                                     </span>
                                   )}
                                 </div>
@@ -418,7 +460,7 @@ const Register: React.FC = () => {
                                   <input
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => handleImageUpload(editingQuiz.title, e)}
+                                    onChange={(e) => handleImageUpload(editingQuiz.id, e)}
                                     className="hidden"
                                     id={`edit-image-${index}`}
                                   />
@@ -451,21 +493,21 @@ const Register: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 text-white">{quiz.title}</td>
+                          <td className="px-4 py-3 text-white">{index + 1}</td>
                           <td className="px-4 py-3 text-white whitespace-pre-wrap">{quiz.quiz}</td>
                           <td className="px-4 py-3 text-white">{quiz.answer}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col items-start gap-2">
-                              {quizImages[quiz.title] ? (
+                              {quizImages[quiz.id] ? (
                                 <div className="flex flex-col gap-2">
                                   <img
-                                    src={quizImages[quiz.title]}
-                                    alt={quiz.title}
+                                    src={quizImages[quiz.id]}
+                                    alt={`퀴즈 ${index + 1}`}
                                     className="w-16 h-16 object-cover rounded"
                                   />
-                                  {quizImageFileNames[quiz.title] && (
+                                  {quizImageFileNames[quiz.id] && (
                                     <span className="text-gray-400 text-xs truncate max-w-[150px]">
-                                      {quizImageFileNames[quiz.title]}
+                                      {quizImageFileNames[quiz.id]}
                                     </span>
                                   )}
                                 </div>

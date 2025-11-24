@@ -17,10 +17,10 @@ const MIME_TYPES: Record<string, string> = {
  * Register quiz image management IPC handlers
  */
 export function registerQuizImageHandlers(): void {
-  // Save quiz image (title-based filename)
+  // Save quiz image (id-based filename)
   ipcMain.handle(
     'save-quiz-image',
-    async (_, folderName: string, title: string, base64Data: string, originalFileName: string) => {
+    async (_, folderName: string, id: string, base64Data: string, originalFileName: string) => {
       try {
         const folderPath = getOrCreateQuizFolderPath(folderName)
 
@@ -30,10 +30,9 @@ export function registerQuizImageHandlers(): void {
           throw new Error('Invalid image format')
         }
 
-        // Sanitize title for filename
-        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '').trim()
-        if (!sanitizedTitle) {
-          throw new Error('Invalid title')
+        // Validate id
+        if (!id || !id.trim()) {
+          throw new Error('Invalid id')
         }
 
         // Remove data URL prefix if present
@@ -42,8 +41,8 @@ export function registerQuizImageHandlers(): void {
         // Convert base64 to buffer
         const buffer = Buffer.from(base64Content, 'base64')
 
-        // Create filename: {title}.{ext}
-        const fileName = `${sanitizedTitle}${ext}`
+        // Create filename: {id}.{ext}
+        const fileName = `${id}${ext}`
         const filePath = normalize(resolve(join(folderPath, fileName)))
 
         // Security check
@@ -63,7 +62,7 @@ export function registerQuizImageHandlers(): void {
   )
 
   // Delete quiz image
-  ipcMain.handle('delete-quiz-image', async (_, folderName: string, title: string) => {
+  ipcMain.handle('delete-quiz-image', async (_, folderName: string, id: string) => {
     try {
       const quizPath = getQuizGamesPath()
       const folderPath = normalize(resolve(join(quizPath, folderName)))
@@ -76,8 +75,7 @@ export function registerQuizImageHandlers(): void {
       // Try to find image file with any extension
       let deleted = false
       for (const ext of IMAGE_EXTENSIONS) {
-        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '').trim()
-        const fileName = `${sanitizedTitle}${ext}`
+        const fileName = `${id}${ext}`
         const filePath = normalize(resolve(join(folderPath, fileName)))
 
         // Security check
@@ -104,7 +102,7 @@ export function registerQuizImageHandlers(): void {
   })
 
   // Get quiz image as base64
-  ipcMain.handle('get-quiz-image-base64', async (_, folderName: string, title: string) => {
+  ipcMain.handle('get-quiz-image-base64', async (_, folderName: string, id: string) => {
     try {
       const quizPath = getQuizGamesPath()
       const folderPath = normalize(resolve(join(quizPath, folderName)))
@@ -116,8 +114,7 @@ export function registerQuizImageHandlers(): void {
 
       // Try to find image file with any extension
       for (const ext of IMAGE_EXTENSIONS) {
-        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '').trim()
-        const fileName = `${sanitizedTitle}${ext}`
+        const fileName = `${id}${ext}`
         const filePath = normalize(resolve(join(folderPath, fileName)))
 
         // Security check

@@ -56,4 +56,3 @@ export function closeAdminWindow(): void {
 export function getAdminWindow(): BrowserWindow | null {
   return adminWindow
 }
-

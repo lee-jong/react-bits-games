@@ -19,7 +19,8 @@ interface ImageFile {
 }
 
 interface QuizItem {
-  title: string
+  id: string
+  index: number
   quiz: string
   answer: string
 }
@@ -39,14 +40,14 @@ interface FolderAPI {
   ) => Promise<{ success: boolean }>
   saveQuizImage: (
     folderName: string,
-    title: string,
+    id: string,
     base64Data: string,
     originalFileName: string
   ) => Promise<{ success: boolean; fileName: string }>
-  deleteQuizImage: (folderName: string, title: string) => Promise<{ success: boolean }>
+  deleteQuizImage: (folderName: string, id: string) => Promise<{ success: boolean }>
   getQuizImageBase64: (
     folderName: string,
-    title: string
+    id: string
   ) => Promise<{ base64?: string; exists: boolean; fileName?: string }>
   getQuizFileInfo: (folderName: string) => Promise<{
     exists: boolean

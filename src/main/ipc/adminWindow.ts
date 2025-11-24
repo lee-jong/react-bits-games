@@ -28,4 +28,3 @@ export function registerAdminWindowHandlers(mainWindow: BrowserWindow | null): v
     }
   })
 }
-

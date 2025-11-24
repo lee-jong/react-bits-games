@@ -6,7 +6,8 @@ import QuizFolderCard from '@/components/setting/QuizFolderCard'
 import UploadButton from '@/components/setting/UploadButton'
 
 interface QuizItem {
-  title: string
+  id: string
+  index: number
   quiz: string
   answer: string
 }

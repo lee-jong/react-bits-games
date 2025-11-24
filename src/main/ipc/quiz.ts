@@ -4,7 +4,8 @@ import { readFileSync, writeFileSync, existsSync, statSync } from 'fs'
 import { getOrCreateQuizFolderPath, ensureQuizGamesDirectory, getQuizGamesPath } from './utils'
 
 interface QuizItem {
-  title: string
+  id: string
+  index: number
   quiz: string
   answer: string
 }
@@ -66,8 +67,8 @@ export function registerQuizHandlers(): void {
 
         // Validate each quiz item
         for (const quiz of quizzes) {
-          if (!quiz.title || !quiz.quiz || !quiz.answer) {
-            throw new Error('Each quiz must have title, quiz, and answer fields')
+          if (!quiz.id || typeof quiz.index !== 'number' || !quiz.quiz || !quiz.answer) {
+            throw new Error('Each quiz must have id, index, quiz, and answer fields')
           }
         }
 

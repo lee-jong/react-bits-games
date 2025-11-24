@@ -3,7 +3,8 @@ import Folder from '@/components/bits/Folder'
 import QuizItem from './QuizItem'
 
 interface QuizItemData {
-  title: string
+  id: string
+  index: number
   quiz: string
   answer: string
 }
@@ -28,11 +29,11 @@ const QuizFolderCard: React.FC<QuizFolderCardProps> = ({
 
     // Add latest quizzes based on count (similar to images)
     if (quizzes.length >= 2) {
-      quizzes.slice(0, 2).forEach((quiz, index) => {
-        items.push(<QuizItem key={`quiz-${index}`} title={quiz.title} />)
+      quizzes.slice(0, 2).forEach((quiz) => {
+        items.push(<QuizItem key={`quiz-${quiz.id}`} index={quiz.index} />)
       })
     } else if (quizzes.length === 1) {
-      items.push(<QuizItem key="quiz-0" title={quizzes[0].title} />)
+      items.push(<QuizItem key={`quiz-${quizzes[0].id}`} index={quizzes[0].index} />)
     }
 
     return items
