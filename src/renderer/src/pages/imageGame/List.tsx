@@ -71,6 +71,8 @@ const Home: React.FC = () => {
                   <div
                     onMouseEnter={() => handleMouseEnter(data.id)}
                     onMouseLeave={() => handleMouseLeave(data.id)}
+                    onClick={() => navigate(`/image-game/game/${data.id}`)}
+                    className="cursor-pointer"
                   >
                     <SpotlightCard
                       className="custom-spotlight-card"

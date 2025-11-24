@@ -68,7 +68,7 @@ const Setting: React.FC = () => {
   }
 
   const handleBack = (): void => {
-    navigate('/image-game')
+    navigate('/image-game/list')
   }
 
   const handleAddFolder = async (): Promise<void> => {

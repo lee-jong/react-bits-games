@@ -35,6 +35,16 @@ interface FolderAPI {
     newFileName: string
   ) => Promise<{ success: boolean; fileName: string }>
   getImageBase64: (folderName: string, fileName: string) => Promise<{ base64: string }>
+  createAdminWindow: (folderName: string) => Promise<{ success: boolean }>
+  closeAdminWindow: () => Promise<{ success: boolean }>
+  gameStart: (folderName: string) => void
+  gameNextImage: () => void
+  gameEnd: () => void
+  gameImageChanged: (imageName: string) => void
+  onGameImageChanged: (callback: (imageName: string) => void) => () => void
+  onGameStart: (callback: (folderName: string) => void) => () => void
+  onGameNextImage: (callback: () => void) => () => void
+  onGameEnd: (callback: () => void) => () => void
 }
 
 declare global {
