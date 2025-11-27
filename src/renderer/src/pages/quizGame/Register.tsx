@@ -32,7 +32,6 @@ const Register: React.FC = () => {
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isSaving, setIsSaving] = useState(false) // Used for internal state management during saves
 
   const loadQuizzes = useCallback(async (): Promise<void> => {
     if (!folderName) return
@@ -94,13 +93,10 @@ const Register: React.FC = () => {
     }
 
     try {
-      setIsSaving(true)
       await window.api.saveQuizFile(folderName, category || folderName, quizzesToSave)
     } catch (error) {
       console.error('Error saving quizzes:', error)
       alert('저장에 실패했습니다.')
-    } finally {
-      setIsSaving(false)
     }
   }
 
